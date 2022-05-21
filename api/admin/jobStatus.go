@@ -14,7 +14,7 @@ func JobStatusGet(w http.ResponseWriter, r *http.Request) {
 	var response = make(map[string]interface{})
 
 	// get job status
-	jobStatus, err := DB.SelectProcess("select id, name from "+CONSTANT.JobStatusTable+" where job_id = $1 and status = '"+CONSTANT.JobStatusActive+`' order by "order"`, r.FormValue("job_id"))
+	jobStatus, err := DB.SelectProcess("select id, name, type from "+CONSTANT.JobStatusTable+" where job_id = $1 and status = '"+CONSTANT.JobStatusActive+`' order by "order"`, r.FormValue("job_id"))
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return

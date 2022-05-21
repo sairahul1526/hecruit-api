@@ -16,7 +16,7 @@ func ApplicationGet(w http.ResponseWriter, r *http.Request) {
 	var response = make(map[string]interface{})
 
 	// get application details
-	application, err := DB.SelectSQL(CONSTANT.ApplicationsTable, []string{"id", "job_id", "name", "email", "created_at", "phone", "current_company", "current_salary", "expected_salary", "notice_period", "total_experience", "location", "linkedin_link", "twitter_link", "github_link", "portfolio_link", "other_link", "cover", "additional_information", "resume", "rating"}, map[string]string{"id": r.FormValue("application_id")})
+	application, err := DB.SelectSQL(CONSTANT.ApplicationsTable, []string{"id", "job_id", "name", "email", "created_at", "phone", "current_company", "current_salary", "expected_salary", "notice_period", "total_experience", "location", "linkedin_link", "twitter_link", "github_link", "portfolio_link", "other_link", "cover", "additional_information", "resume", "rating", "status"}, map[string]string{"id": r.FormValue("application_id")})
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
@@ -48,10 +48,36 @@ func ApplicationGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get all activities done on this application
-	activities, err := DB.SelectProcess("select status, created_at from "+CONSTANT.ApplicationActivitiesTable+" where application_id = $1", r.FormValue("application_id"))
+	activities, err := DB.SelectProcess("select status, created_at, created_by from "+CONSTANT.ApplicationActivitiesTable+" where application_id = $1 order by created_at", r.FormValue("application_id"))
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
+	}
+	// get status, user ids to get details
+	status := UTIL.ExtractValuesFromArrayMap(activities, "status")
+	userIDs := UTIL.ExtractValuesFromArrayMap(activities, "created_by")
+
+	// get status names
+	statusNames, err := DB.SelectProcess("select id, name, type from " + CONSTANT.JobStatusTable + " where id in ('" + strings.Join(status, "','") + "')")
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// get users
+	users, err := DB.SelectProcess("select id, name from " + CONSTANT.UsersTable + " where id in ('" + strings.Join(userIDs, "','") + "')")
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	statusNamesMap := UTIL.ConvertMapToKeyMap(statusNames, "id")
+	usersMap := UTIL.ConvertMapToKeyMap(users, "id")
+
+	for _, activity := range activities {
+		activity["status_name"] = statusNamesMap[activity["status"]]["name"]
+		activity["status_type"] = statusNamesMap[activity["status"]]["type"]
+		activity["created_by_name"] = usersMap[activity["created_by"]]["name"]
 	}
 
 	application[0]["team_name"] = team[0]["name"]
@@ -114,7 +140,7 @@ func ApplicationsGet(w http.ResponseWriter, r *http.Request) {
 	status := UTIL.ExtractValuesFromArrayMap(applications, "status")
 
 	// get status names
-	statusNames, err := DB.SelectProcess("select id, name from " + CONSTANT.JobStatusTable + " where id in ('" + strings.Join(status, "','") + "')")
+	statusNames, err := DB.SelectProcess("select id, name, type from " + CONSTANT.JobStatusTable + " where id in ('" + strings.Join(status, "','") + "')")
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
@@ -142,6 +168,7 @@ func ApplicationsGet(w http.ResponseWriter, r *http.Request) {
 
 	for _, application := range applications {
 		application["status_name"] = statusNamesMap[application["status"]]["name"]
+		application["status_type"] = statusNamesMap[application["status"]]["type"]
 	}
 
 	response["applications"] = applications
@@ -156,33 +183,65 @@ func ApplicationMove(w http.ResponseWriter, r *http.Request) {
 
 	var response = make(map[string]interface{})
 
-	// read request body
-	body, err := UTIL.ReadRequestBodyToMap(r)
-	if err != nil {
-		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, "", CONSTANT.ShowDialog, response)
-		return
-	}
-
-	body["company_id"] = r.Header.Get("company_id")
-
-	// TODO get application status and get next status to move to that
-	// and also check for rejection query param and move to rejected status
-	// check for required fields
-	fieldCheck := UTIL.RequiredFiledsCheck(body, CONSTANT.ApplicationUpdateRequiredFields)
-	if len(fieldCheck) > 0 {
-		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, fieldCheck+" required", CONSTANT.ShowDialog, response)
-		return
-	}
-
-	_, err = DB.InsertSQL(CONSTANT.ApplicationActivitiesTable, map[string]string{
-		"job_id":         body["job_id"],
-		"application_id": body["application_id"],
-		"status":         body["status"],
-	})
+	application, err := DB.SelectSQL(CONSTANT.ApplicationsTable, []string{"job_id", "company_id"}, map[string]string{"id": r.FormValue("application_id")})
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
 	}
+	if len(application) == 0 {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.ApplicationNotFoundMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
+	lastestApplicationActivity, err := DB.QueryRowSQL("select status from "+CONSTANT.ApplicationActivitiesTable+" where application_id = $1 order by created_at desc limit 1", r.FormValue("application_id"))
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+	if len(lastestApplicationActivity) == 0 {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.ApplicationStatusNotFoundMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// get status
+	var nextApplicationStatus string
+	if len(r.FormValue("reject")) > 0 {
+		// get reject status
+		nextApplicationStatus, err = DB.QueryRowSQL("select id from " + CONSTANT.JobStatusTable + " where job_id = '" + application[0]["job_id"] + "' and type = " + CONSTANT.JobStatusRejected + " limit 1")
+		if err != nil {
+			UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+			return
+		}
+	} else {
+		// go to next state, except reject
+		nextApplicationStatus, err = DB.QueryRowSQL("select id from " + CONSTANT.JobStatusTable + " where job_id = '" + application[0]["job_id"] + "' and type != " + CONSTANT.JobStatusRejected + ` and "order" > (select "order" from ` + CONSTANT.JobStatusTable + " where id = '" + lastestApplicationActivity + `' limit 1) order by "order" asc limit 1`)
+		if err != nil {
+			UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+			return
+		}
+	}
+	if len(nextApplicationStatus) == 0 {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.ApplicationStatusNotFoundMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
+	_, _, err = DB.InsertWithUniqueID(CONSTANT.ApplicationActivitiesTable, map[string]string{
+		"job_id":         application[0]["job_id"],
+		"application_id": r.FormValue("application_id"),
+		"status":         nextApplicationStatus,
+		"company_id":     r.Header.Get("company_id"),
+		"created_by":     r.Header.Get("user_id"),
+	}, "id")
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	DB.UpdateSQL(CONSTANT.ApplicationsTable, map[string]string{
+		"id": r.FormValue("application_id"),
+	}, map[string]string{
+		"status": nextApplicationStatus,
+	})
 
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }

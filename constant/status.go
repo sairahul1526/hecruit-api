@@ -56,8 +56,3 @@ const (
 	JobStatusHired    = "2"
 	JobStatusRejected = "3"
 )
-
-// application activity status
-const (
-	ApplicationActivityActive = "1"
-)
