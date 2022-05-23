@@ -10,8 +10,8 @@ import (
 func SetReponse(w http.ResponseWriter, status string, msg string, msgType string, response map[string]interface{}) {
 	// cloudflare caches all responses if this is not set
 	w.Header().Set("cache-control", "s-maxage=0")
-	w.Header().Set("Status", status)
-	w.WriteHeader(getHTTPStatusCode(status))
+	w.Header().Set("Status", "200")
+	w.WriteHeader(http.StatusOK)
 	response["meta"] = setMeta(status, msg, msgType)
 	json.NewEncoder(w).Encode(response)
 }

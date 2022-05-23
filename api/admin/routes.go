@@ -21,12 +21,8 @@ func LoadAdminRoutes(router *mux.Router) {
 	).Methods("PUT")
 
 	// company
-	adminRoutes.HandleFunc("/company", JobGet).Queries(
-		"company_id", "{company_id}",
-	).Methods("GET")
-	adminRoutes.HandleFunc("/company", JobGet).Queries(
-		"company_id", "{company_id}",
-	).Methods("PUT")
+	adminRoutes.HandleFunc("/company", CompanyGet).Methods("GET")
+	adminRoutes.HandleFunc("/company", CompanyUpdate).Methods("PUT")
 
 	// job
 	adminRoutes.HandleFunc("/job", JobGet).Queries(
@@ -49,10 +45,16 @@ func LoadAdminRoutes(router *mux.Router) {
 	// meta
 	adminRoutes.HandleFunc("/meta", MetaGet).Methods("GET")
 
-	// profile
+	// user
+	adminRoutes.HandleFunc("/user", UsersGet).Queries(
+		"company_id", "{company_id}",
+	).Methods("GET")
 	adminRoutes.HandleFunc("/user", UserGet).Methods("GET")
-	adminRoutes.HandleFunc("/user", UserUpdate).Queries(
+	adminRoutes.HandleFunc("/user", UserUpdate).Methods("PUT")
+	adminRoutes.HandleFunc("/user-invite", UserInvite).Methods("POST")
+	adminRoutes.HandleFunc("/user-maintain", UserMaintain).Queries(
 		"user_id", "{user_id}",
+		"company_id", "{company_id}",
 	).Methods("PUT")
 	adminRoutes.HandleFunc("/login", UserLogin).Methods("POST")
 	adminRoutes.HandleFunc("/signup", UserSignUp).Methods("POST")

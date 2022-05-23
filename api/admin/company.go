@@ -15,7 +15,7 @@ func CompanyGet(w http.ResponseWriter, r *http.Request) {
 	var response = make(map[string]interface{})
 
 	// get company details
-	company, err := DB.SelectSQL(CONSTANT.CompaniesTable, []string{"name", "description", "logo", "website", "banner", "owner_user_id", "plan", "plan_amount", "payment_user_details", "status", "jobs_link"}, map[string]string{"id": r.FormValue("company_id")})
+	company, err := DB.SelectSQL(CONSTANT.CompaniesTable, []string{"name", "description", "logo", "website", "banner", "owner_user_id", "plan", "plan_amount", "payment_user_details", "status", "jobs_link"}, map[string]string{"id": r.Header.Get("company_id")})
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
@@ -46,7 +46,7 @@ func CompanyUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = DB.UpdateSQL(CONSTANT.CompaniesTable, map[string]string{
-		"id": r.FormValue("company_id"),
+		"id": r.Header.Get("company_id"),
 	}, map[string]string{
 		"name":          body["name"],
 		"description":   body["description"],

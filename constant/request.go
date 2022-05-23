@@ -6,5 +6,6 @@ var (
 	JobAddRequiredFields            = []string{"company_id", "team_id", "name", "description", "employment_type", "country", "remote_option"}
 	TeamAddRequiredFields           = []string{"company_id", "name"}
 	UserLoginRequiredFields         = []string{"email", "password"}
+	UserInviteRequiredFields        = []string{"email"}
 	UserSignUpRequiredFields        = []string{"name", "email", "password", "company_name"}
 )

@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	UTIL "hecruit-backend/util"
+
+	"github.com/google/uuid"
 )
 
 func UserGet(w http.ResponseWriter, r *http.Request) {
@@ -15,9 +17,78 @@ func UserGet(w http.ResponseWriter, r *http.Request) {
 	var response = make(map[string]interface{})
 
 	// since user already checked in middleware, no need to check for zero size
-	user, _ := DB.SelectSQL(CONSTANT.UsersTable, []string{"name", "email", "role", "photo"}, map[string]string{"user_id": r.Header.Get("user_id")})
-	response["user"] = user[0]
+	user, err := DB.SelectSQL(CONSTANT.UsersTable, []string{"name", "email", "role", "photo"}, map[string]string{"id": r.Header.Get("user_id")})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
 
+	response["user"] = user[0]
+	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
+}
+
+func UsersGet(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var response = make(map[string]interface{})
+
+	// get users of a company
+	users, err := DB.SelectSQL(CONSTANT.UsersTable, []string{"id", "name", "email", "role", "photo", "status"}, map[string]string{"company_id": r.Header.Get("company_id")})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	response["users"] = users
+	response["media_url"] = CONSTANT.MediaURL
+	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
+}
+
+func UserInvite(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var response = make(map[string]interface{})
+
+	// read request body
+	body, err := UTIL.ReadRequestBodyToMap(r)
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// check for required fields
+	fieldCheck := UTIL.RequiredFiledsCheck(body, CONSTANT.UserInviteRequiredFields)
+	if len(fieldCheck) > 0 {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, fieldCheck+" required", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// check if email is valid, based on regex
+	if !UTIL.IsEmailValid(body["email"]) {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.UseValidEmailMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// check if email already exists
+	if DB.CheckIfExists(CONSTANT.UsersTable, map[string]string{"email": body["email"]}) == nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.EmailExistMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
+	password := strings.Split(uuid.New().String(), "-")[0]
+	// create user
+	_, _, err = DB.InsertWithUniqueID(CONSTANT.UsersTable, map[string]string{
+		"email":      body["email"],
+		"company_id": r.Header.Get("company_id"),
+		"password":   UTIL.GetMD5HashString(password),
+		"status":     CONSTANT.UserActive,
+	}, "id")
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// TODO - send email
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }
 
@@ -25,11 +96,6 @@ func UserUpdate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var response = make(map[string]interface{})
-
-	if !strings.EqualFold(r.Header.Get("user_id"), r.FormValue("user_id")) {
-		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, "", CONSTANT.ShowDialog, response)
-		return
-	}
 
 	// read request body
 	body, err := UTIL.ReadRequestBodyToMap(r)
@@ -44,9 +110,9 @@ func UserUpdate(w http.ResponseWriter, r *http.Request) {
 		"photo": body["photo"],
 	}
 	// check if password is being updated
-	if len(body["current_password"]) > 0 {
+	if len(body["new_password"]) > 0 {
 		// get user
-		user, err := DB.SelectSQL(CONSTANT.UsersTable, []string{"password"}, map[string]string{"id": r.FormValue("user_id")})
+		user, err := DB.SelectSQL(CONSTANT.UsersTable, []string{"password"}, map[string]string{"id": r.Header.Get("user_id")})
 		if err != nil {
 			UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 			return
@@ -58,7 +124,33 @@ func UserUpdate(w http.ResponseWriter, r *http.Request) {
 		change["password"] = UTIL.GetMD5HashString(body["new_password"])
 	}
 
-	_, err = DB.UpdateSQL(CONSTANT.UsersTable, map[string]string{"id": r.FormValue("user_id")}, change)
+	_, err = DB.UpdateSQL(CONSTANT.UsersTable, map[string]string{"id": r.Header.Get("user_id")}, change)
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
+}
+
+func UserMaintain(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var response = make(map[string]interface{})
+
+	// read request body
+	body, err := UTIL.ReadRequestBodyToMap(r)
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	_, err = DB.UpdateSQL(CONSTANT.UsersTable, map[string]string{
+		"id":         r.FormValue("user_id"),
+		"company_id": r.FormValue("company_id"),
+	}, map[string]string{
+		"status": body["status"],
+	})
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
