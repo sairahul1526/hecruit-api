@@ -8,6 +8,6 @@ import (
 // Log - log based on test value
 func Log(str ...interface{}) {
 	if CONFIG.Log {
-		fmt.Println(str...)
+		fmt.Println(str)
 	}
 }

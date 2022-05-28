@@ -42,9 +42,6 @@ func LoadAdminRoutes(router *mux.Router) {
 		"job_id", "{job_id}",
 	).Methods("GET")
 
-	// meta
-	adminRoutes.HandleFunc("/meta", MetaGet).Methods("GET")
-
 	// user
 	adminRoutes.HandleFunc("/user", UsersGet).Queries(
 		"company_id", "{company_id}",
@@ -59,6 +56,13 @@ func LoadAdminRoutes(router *mux.Router) {
 	adminRoutes.HandleFunc("/login", UserLogin).Methods("POST")
 	adminRoutes.HandleFunc("/signup", UserSignUp).Methods("POST")
 	adminRoutes.HandleFunc("/refresh-token", UserRefreshToken).Methods("GET")
+
+	// location
+	adminRoutes.HandleFunc("/location", LocationsGet).Methods("GET")
+	adminRoutes.HandleFunc("/location", LocationAdd).Methods("POST")
+	adminRoutes.HandleFunc("/location", LocationUpdate).Queries(
+		"location_id", "{location_id}",
+	).Methods("PUT")
 
 	// team
 	adminRoutes.HandleFunc("/team", TeamsGet).Methods("GET")

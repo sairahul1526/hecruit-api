@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	AdminAPI "hecruit-backend/api/admin"
+	MiscellaneousAPI "hecruit-backend/api/miscellaneous"
+	UserAPI "hecruit-backend/api/user"
 
 	"github.com/gorilla/mux"
 )
@@ -20,6 +22,8 @@ func LoadRouter() *mux.Router {
 	router := mux.NewRouter()
 
 	AdminAPI.LoadAdminRoutes(router)
+	MiscellaneousAPI.LoadMiscellaneousRoutes(router)
+	UserAPI.LoadUserRoutes(router)
 
 	router.Path("/").HandlerFunc(HealthCheck).Methods("GET")
 

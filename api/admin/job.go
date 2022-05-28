@@ -15,7 +15,7 @@ func JobGet(w http.ResponseWriter, r *http.Request) {
 	var response = make(map[string]interface{})
 
 	// get job details
-	job, err := DB.SelectSQL(CONSTANT.JobsTable, []string{"id", "company_id", "team_id", "name", "description", "employment_type", "salary", "country", "city", "remote_option", "status", "created_at"}, map[string]string{"id": r.FormValue("job_id"), "company_id": r.Header.Get("company_id")})
+	job, err := DB.SelectSQL(CONSTANT.JobsTable, []string{"id", "company_id", "team_id", "name", "description", "employment_type", "salary", "location_id", "remote_option", "status", "created_at"}, map[string]string{"id": r.FormValue("job_id"), "company_id": r.Header.Get("company_id")})
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
@@ -26,7 +26,7 @@ func JobGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	job[0]["team_name"], _ = DB.QueryRowSQL("select name from " + CONSTANT.TeamsTable + " where id = '" + job[0]["team_id"] + "'")
-	job[0]["country_name"] = CONSTANT.Countries[job[0]["country"]]
+	job[0]["location_name"], _ = DB.QueryRowSQL("select name from " + CONSTANT.LocationsTable + " where id = '" + job[0]["location_id"] + "'")
 	job[0]["employment_type_name"] = CONSTANT.EmploymentTypes[job[0]["employment_type"]]
 	job[0]["remote_option_name"] = CONSTANT.RemoteOptions[job[0]["remote_option"]]
 
@@ -40,12 +40,12 @@ func JobsGet(w http.ResponseWriter, r *http.Request) {
 	var response = make(map[string]interface{})
 
 	// get jobs in a team
-	jobs, err := DB.SelectSQL(CONSTANT.JobsTable, []string{"id", "name", "employment_type", "salary", "country", "city", "remote_option"}, map[string]string{"team_id": r.FormValue("team_id"), "status": r.FormValue("status")})
+	jobs, err := DB.SelectSQL(CONSTANT.JobsTable, []string{"id", "name", "employment_type", "salary", "location_id", "remote_option"}, map[string]string{"team_id": r.FormValue("team_id"), "location_id": r.FormValue("location_id"), "status": r.FormValue("status")})
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
 	}
-	// get job ids to get details
+	// get job, location ids to get details
 	jobIDs := UTIL.ExtractValuesFromArrayMap(jobs, "id")
 
 	// get number of applications for each job
@@ -54,6 +54,7 @@ func JobsGet(w http.ResponseWriter, r *http.Request) {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
 	}
+
 	applicationsCountMap := UTIL.ConvertMapToKeyMap(applicationsCount, "job_id")
 
 	for _, job := range jobs {
@@ -92,10 +93,9 @@ func JobAdd(w http.ResponseWriter, r *http.Request) {
 		"name":            body["name"],
 		"description":     body["description"],
 		"employment_type": body["employment_type"],
-		"country":         body["country"],
+		"location_id":     body["location_id"],
 		"remote_option":   body["remote_option"],
 		"salary":          body["salary"],
-		"city":            body["city"],
 		"status":          body["status"],
 	}, "id")
 	if err != nil {
@@ -130,10 +130,9 @@ func JobUpdate(w http.ResponseWriter, r *http.Request) {
 		"name":            body["name"],
 		"description":     body["description"],
 		"employment_type": body["employment_type"],
-		"country":         body["country"],
+		"location_id":     body["location_id"],
 		"remote_option":   body["remote_option"],
 		"salary":          body["salary"],
-		"city":            body["city"],
 		"status":          body["status"],
 	})
 	if err != nil {

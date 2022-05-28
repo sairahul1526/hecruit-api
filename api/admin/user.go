@@ -17,12 +17,13 @@ func UserGet(w http.ResponseWriter, r *http.Request) {
 	var response = make(map[string]interface{})
 
 	// since user already checked in middleware, no need to check for zero size
-	user, err := DB.SelectSQL(CONSTANT.UsersTable, []string{"name", "email", "role", "photo"}, map[string]string{"id": r.Header.Get("user_id")})
+	user, err := DB.SelectSQL(CONSTANT.UsersTable, []string{"name", "email", "role", "photo", "company_id"}, map[string]string{"id": r.Header.Get("user_id")})
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
 	}
 
+	user[0]["company_name"], _ = DB.QueryRowSQL("select name from " + CONSTANT.CompaniesTable + " where id = '" + user[0]["company_id"] + "'")
 	response["user"] = user[0]
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }

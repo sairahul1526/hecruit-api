@@ -1,4 +1,4 @@
-package admin
+package miscellaneous
 
 import (
 	CONSTANT "hecruit-backend/constant"
@@ -12,7 +12,6 @@ func MetaGet(w http.ResponseWriter, r *http.Request) {
 
 	var response = make(map[string]interface{})
 
-	response["countries"] = CONSTANT.Countries
 	response["employment_types"] = CONSTANT.EmploymentTypes
 	response["remote_options"] = CONSTANT.RemoteOptions
 

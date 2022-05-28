@@ -31,6 +31,12 @@ const (
 	CompanyArchived = "2"
 )
 
+// location status
+const (
+	LocationActive   = "1"
+	LocationArchived = "2"
+)
+
 // teams status
 const (
 	TeamActive   = "1"
