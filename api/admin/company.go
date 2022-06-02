@@ -1,6 +1,7 @@
 package admin
 
 import (
+	CONFIG "hecruit-backend/config"
 	CONSTANT "hecruit-backend/constant"
 	DB "hecruit-backend/database"
 	"net/http"
@@ -30,6 +31,7 @@ func CompanyGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response["company"] = company[0]
+	response["media_url"] = CONFIG.S3MediaURL
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }
 

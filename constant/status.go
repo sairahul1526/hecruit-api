@@ -58,7 +58,8 @@ const (
 
 // job status type
 const (
-	JobStatusApplied  = "1"
+	JobStatusApplied  = "0"
+	JobStatusProcess  = "1"
 	JobStatusHired    = "2"
 	JobStatusRejected = "3"
 )

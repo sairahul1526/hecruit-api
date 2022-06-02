@@ -23,4 +23,12 @@ func LoadConfig() {
 	Log, _ = strconv.ParseBool(os.Getenv("LOG"))
 	Migrate, _ = strconv.ParseBool(os.Getenv("MIGRATE"))
 	JWTSecret = []byte(os.Getenv("JWT_SECRET"))
+
+	// s3
+	S3Endpoint = os.Getenv("S3_ENDPOINT")
+	S3ID = os.Getenv("S3_ID")
+	S3Secret = os.Getenv("S3_SECRET")
+	S3Region = os.Getenv("S3_REGION")
+	S3Bucket = os.Getenv("S3_BUCKET")
+	S3MediaURL = os.Getenv("S3_MEDIA_URL")
 }

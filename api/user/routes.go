@@ -32,4 +32,9 @@ func LoadUserRoutes(router *mux.Router) {
 		"company_id", "{company_id}",
 	).Methods("GET")
 
+	// upload
+	adminRoutes.HandleFunc("/upload-signed-url", UploadSignedURL).Queries(
+		"file_type", "{file_type}",
+	).Methods("GET")
+
 }

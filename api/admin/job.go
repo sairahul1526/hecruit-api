@@ -15,7 +15,7 @@ func JobGet(w http.ResponseWriter, r *http.Request) {
 	var response = make(map[string]interface{})
 
 	// get job details
-	job, err := DB.SelectSQL(CONSTANT.JobsTable, []string{"id", "company_id", "team_id", "name", "description", "employment_type", "salary", "location_id", "remote_option", "status", "created_at", "number_of_positions", "hiring_manager", "requirements", "benefits"}, map[string]string{"id": r.FormValue("job_id"), "company_id": r.Header.Get("company_id")})
+	job, err := DB.SelectSQL(CONSTANT.JobsTable, []string{"id", "company_id", "team_id", "name", "description", "employment_type", "salary", "location_id", "remote_option", "status", "created_at", "number_of_positions", "hiring_manager", "responsibilities", "requirements"}, map[string]string{"id": r.FormValue("job_id"), "company_id": r.Header.Get("company_id")})
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
@@ -25,12 +25,20 @@ func JobGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// get job status
+	jobStatus, err := DB.SelectProcess("select id, name, type from "+CONSTANT.JobStatusTable+" where job_id = $1 and status = '"+CONSTANT.JobStatusActive+`' order by "order"`, r.FormValue("job_id"))
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
 	job[0]["team_name"], _ = DB.QueryRowSQL("select name from " + CONSTANT.TeamsTable + " where id = '" + job[0]["team_id"] + "'")
 	job[0]["location_name"], _ = DB.QueryRowSQL("select name from " + CONSTANT.LocationsTable + " where id = '" + job[0]["location_id"] + "'")
 	job[0]["employment_type_name"] = CONSTANT.EmploymentTypes[job[0]["employment_type"]]
 	job[0]["remote_option_name"] = CONSTANT.RemoteOptions[job[0]["remote_option"]]
 
 	response["job"] = job[0]
+	response["job_status"] = jobStatus
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }
 
@@ -99,8 +107,8 @@ func JobAdd(w http.ResponseWriter, r *http.Request) {
 		"status":              body["status"],
 		"number_of_positions": body["number_of_positions"],
 		"hiring_manager":      body["hiring_manager"],
+		"responsibilities":    body["responsibilities"],
 		"requirements":        body["requirements"],
-		"benefits":            body["benefits"],
 	}, "id")
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
@@ -124,12 +132,10 @@ func JobUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body["company_id"] = r.Header.Get("company_id")
-
 	_, err = DB.UpdateSQL(CONSTANT.JobsTable, map[string]string{
-		"id": r.FormValue("job_id"),
+		"id":         r.FormValue("job_id"),
+		"company_id": r.Header.Get("company_id"),
 	}, map[string]string{
-		"company_id":          body["company_id"],
 		"team_id":             body["team_id"],
 		"name":                body["name"],
 		"description":         body["description"],
@@ -140,8 +146,8 @@ func JobUpdate(w http.ResponseWriter, r *http.Request) {
 		"status":              body["status"],
 		"number_of_positions": body["number_of_positions"],
 		"hiring_manager":      body["hiring_manager"],
+		"responsibilities":    body["responsibilities"],
 		"requirements":        body["requirements"],
-		"benefits":            body["benefits"],
 	})
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)

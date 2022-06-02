@@ -1,6 +1,7 @@
 package admin
 
 import (
+	CONFIG "hecruit-backend/config"
 	CONSTANT "hecruit-backend/constant"
 	DB "hecruit-backend/database"
 	"net/http"
@@ -84,7 +85,7 @@ func ApplicationGet(w http.ResponseWriter, r *http.Request) {
 	application[0]["job_name"] = job[0]["name"]
 	response["application"] = application[0]
 	response["activities"] = activities
-	response["media_url"] = CONSTANT.MediaURL
+	response["media_url"] = CONFIG.S3MediaURL
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }
 
@@ -174,6 +175,32 @@ func ApplicationsGet(w http.ResponseWriter, r *http.Request) {
 	response["applications"] = applications
 	response["applications_count"] = applicationsCount[0]["ctn"]
 	response["no_pages"] = strconv.Itoa(UTIL.GetNumberOfPages(applicationsCount[0]["ctn"], CONSTANT.ResultsPerPageAdmin))
+
+	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
+}
+
+func ApplicationUpdate(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var response = make(map[string]interface{})
+
+	// read request body
+	body, err := UTIL.ReadRequestBodyToMap(r)
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	_, err = DB.UpdateSQL(CONSTANT.ApplicationsTable, map[string]string{
+		"id":         r.FormValue("application_id"),
+		"company_id": r.Header.Get("company_id"),
+	}, map[string]string{
+		"rating": body["rating"],
+	})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
 
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }

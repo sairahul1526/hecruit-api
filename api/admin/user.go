@@ -1,6 +1,7 @@
 package admin
 
 import (
+	CONFIG "hecruit-backend/config"
 	CONSTANT "hecruit-backend/constant"
 	DB "hecruit-backend/database"
 	"net/http"
@@ -25,6 +26,7 @@ func UserGet(w http.ResponseWriter, r *http.Request) {
 
 	user[0]["company_name"], _ = DB.QueryRowSQL("select name from " + CONSTANT.CompaniesTable + " where id = '" + user[0]["company_id"] + "'")
 	response["user"] = user[0]
+	response["media_url"] = CONFIG.S3MediaURL
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }
 
@@ -41,7 +43,7 @@ func UsersGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response["users"] = users
-	response["media_url"] = CONSTANT.MediaURL
+	response["media_url"] = CONFIG.S3MediaURL
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }
 

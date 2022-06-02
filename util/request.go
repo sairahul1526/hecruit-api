@@ -52,3 +52,23 @@ func ReadRequestBodyToMap(r *http.Request) (map[string]string, error) {
 
 	return body, nil
 }
+
+// ReadRequestBodyToArrayMap - read raw body from request
+func ReadRequestBodyToArrayMap(r *http.Request) ([]map[string]string, error) {
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		LOGGER.Log("ReadRequestBodyToArrayMap", err)
+		return []map[string]string{}, err
+	}
+	defer r.Body.Close()
+
+	body := []map[string]string{}
+
+	err = json.Unmarshal(b, &body)
+	if err != nil {
+		LOGGER.Log("ReadRequestBodyToArrayMap", err)
+		return []map[string]string{}, err
+	}
+
+	return body, nil
+}

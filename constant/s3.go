@@ -2,5 +2,7 @@ package constant
 
 // aws s3 constants
 const (
-	MediaURL = "https://sal-test-app.s3.ap-south-1.amazonaws.com/"
+	CompanyS3Path = "company/"
+	ResumeS3Path  = "resume/"
+	UserS3Path    = "user/"
 )

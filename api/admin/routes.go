@@ -16,6 +16,9 @@ func LoadAdminRoutes(router *mux.Router) {
 		"application_id", "{application_id}",
 	).Methods("GET")
 	adminRoutes.HandleFunc("/application", ApplicationsGet).Methods("GET")
+	adminRoutes.HandleFunc("/application", ApplicationUpdate).Queries(
+		"application_id", "{application_id}",
+	).Methods("PUT")
 	adminRoutes.HandleFunc("/application-move", ApplicationMove).Queries(
 		"application_id", "{application_id}",
 	).Methods("PUT")
@@ -38,9 +41,12 @@ func LoadAdminRoutes(router *mux.Router) {
 	).Methods("PUT")
 
 	// job
-	adminRoutes.HandleFunc("/job-status", JobStatusGet).Queries(
+	adminRoutes.HandleFunc("/job-status", JobStatusAdd).Queries(
 		"job_id", "{job_id}",
-	).Methods("GET")
+	).Methods("POST")
+	adminRoutes.HandleFunc("/job-status", JobStatusUpdate).Queries(
+		"job_id", "{job_id}",
+	).Methods("PUT")
 
 	// user
 	adminRoutes.HandleFunc("/user", UsersGet).Queries(
@@ -71,4 +77,9 @@ func LoadAdminRoutes(router *mux.Router) {
 		"team_id", "{team_id}",
 	).Methods("PUT")
 
+	// upload
+	adminRoutes.HandleFunc("/upload-signed-url", UploadSignedURL).Queries(
+		"file_type", "{file_type}",
+		"path_type", "{path_type}",
+	).Methods("GET")
 }
