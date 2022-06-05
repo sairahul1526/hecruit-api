@@ -27,6 +27,9 @@ func LoadAdminRoutes(router *mux.Router) {
 	adminRoutes.HandleFunc("/company", CompanyGet).Methods("GET")
 	adminRoutes.HandleFunc("/company", CompanyUpdate).Methods("PUT")
 
+	// home
+	adminRoutes.HandleFunc("/home", Home).Methods("GET")
+
 	// job
 	adminRoutes.HandleFunc("/job", JobGet).Queries(
 		"job_id", "{job_id}",
