@@ -8,5 +8,5 @@ var (
 	TeamAddRequiredFields        = []string{"company_id", "name"}
 	UserLoginRequiredFields      = []string{"email", "password"}
 	UserInviteRequiredFields     = []string{"email"}
-	UserSignUpRequiredFields     = []string{"name", "email", "password", "company_name"}
+	UserSignUpRequiredFields     = []string{"name", "email", "password", "company_name", "company_jobs_link"}
 )

@@ -262,23 +262,35 @@ func UserSignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// check if jobs link already exists
+	if DB.CheckIfExists(CONSTANT.CompaniesTable, map[string]string{"jobs_link": body["jobs_link"]}) == nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.EmailExistMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
 	// create company
 	companyID, _, err := DB.InsertWithUniqueID(CONSTANT.CompaniesTable, map[string]string{
-		"name":   body["company_name"],
-		"status": CONSTANT.CompanyActive,
+		"name":      body["company_name"],
+		"jobs_link": body["company_jobs_link"],
+		"status":    CONSTANT.CompanyActive,
 	}, "id")
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
 	}
-	delete(body, "company_name")
 
 	// hash password
 	body["company_id"] = companyID
 	body["password"] = UTIL.GetMD5HashString(body["password"])
 	body["status"] = CONSTANT.UserActive
 
-	userID, _, err := DB.InsertWithUniqueID(CONSTANT.UsersTable, body, "id")
+	userID, _, err := DB.InsertWithUniqueID(CONSTANT.UsersTable, map[string]string{
+		"company_id": companyID,
+		"password":   UTIL.GetMD5HashString(body["password"]),
+		"status":     CONSTANT.UserActive,
+		"name":       body["name"],
+		"email":      body["email"],
+	}, "id")
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
