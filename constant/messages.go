@@ -10,6 +10,7 @@ const (
 	EmailPasswordIncorrectMessage    = "Email/Password incorrect"
 	EmailExistMessage                = "Email already exists. Login in."
 	JobNotFoundMessage               = "Job not found"
+	JobsPageExistMessage             = "Jobs page already exists. Use a different one."
 	PasswordIncorrectMessage         = "Enter correct password"
 	SessionExpiredMessage            = "Session expired. Login again."
 	SessionExpiredRefreshMessage     = "Session expired. Refresh with token."

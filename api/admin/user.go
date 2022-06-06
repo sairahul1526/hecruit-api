@@ -263,8 +263,8 @@ func UserSignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check if jobs link already exists
-	if DB.CheckIfExists(CONSTANT.CompaniesTable, map[string]string{"jobs_link": body["jobs_link"]}) == nil {
-		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.EmailExistMessage, CONSTANT.ShowDialog, response)
+	if DB.CheckIfExists(CONSTANT.CompaniesTable, map[string]string{"jobs_link": body["company_jobs_link"]}) == nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.JobsPageExistMessage, CONSTANT.ShowDialog, response)
 		return
 	}
 
