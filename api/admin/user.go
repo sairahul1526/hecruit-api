@@ -24,7 +24,20 @@ func UserGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user[0]["company_name"], _ = DB.QueryRowSQL("select name from " + CONSTANT.CompaniesTable + " where id = '" + user[0]["company_id"] + "'")
+	company, err := DB.SelectProcess("select name, jobs_link from " + CONSTANT.CompaniesTable + " where id = '" + user[0]["company_id"] + "'")
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+	if len(company) == 0 {
+		if err != nil {
+			UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.CompanyNotFoundMessage, CONSTANT.ShowDialog, response)
+			return
+		}
+	}
+
+	user[0]["company_name"] = company[0]["name"]
+	user[0]["company_jobs_link"] = company[0]["jobs_link"]
 	response["user"] = user[0]
 	response["media_url"] = CONFIG.S3MediaURL
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)

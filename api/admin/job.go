@@ -32,6 +32,14 @@ func JobGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// get company details
+	company, err := DB.SelectProcess("select name, jobs_link from " + CONSTANT.CompaniesTable + " where id = '" + job[0]["company_id"] + "'")
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	job[0]["company_jobs_link"] = company[0]["jobs_link"]
 	job[0]["team_name"], _ = DB.QueryRowSQL("select name from " + CONSTANT.TeamsTable + " where id = '" + job[0]["team_id"] + "'")
 	job[0]["location_name"], _ = DB.QueryRowSQL("select name from " + CONSTANT.LocationsTable + " where id = '" + job[0]["location_id"] + "'")
 	job[0]["employment_type_name"] = CONSTANT.EmploymentTypes[job[0]["employment_type"]]
