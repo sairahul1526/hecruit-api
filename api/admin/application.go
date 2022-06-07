@@ -95,9 +95,13 @@ func ApplicationsGet(w http.ResponseWriter, r *http.Request) {
 	var response = make(map[string]interface{})
 
 	// build query
-	wheres := []string{}
-	queryArgs := []interface{}{}
-	i := 1
+	wheres := []string{
+		" company_id = $1 ",
+	}
+	queryArgs := []interface{}{
+		r.Header.Get("company_id"),
+	}
+	i := 2
 	for key, val := range r.URL.Query() {
 		switch key {
 		case "name":
