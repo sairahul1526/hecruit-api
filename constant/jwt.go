@@ -1,6 +1,6 @@
 package constant
 
 const (
-	JWTRefreshExpiry = 1440  // jwt refresh token expiry in min // 1 day
-	JWTAccessExpiry  = 43200 // jwt access token expiry in min // 1 month
+	JWTRefreshExpiry = 43200 // jwt refresh token expiry in min // 1 month
+	JWTAccessExpiry  = 1440  // jwt access token expiry in min // 1 day
 )

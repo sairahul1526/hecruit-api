@@ -30,10 +30,8 @@ func UserGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(company) == 0 {
-		if err != nil {
-			UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.CompanyNotFoundMessage, CONSTANT.ShowDialog, response)
-			return
-		}
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.CompanyNotFoundMessage, CONSTANT.ShowDialog, response)
+		return
 	}
 
 	user[0]["company_name"] = company[0]["name"]
@@ -87,7 +85,7 @@ func UserInvite(w http.ResponseWriter, r *http.Request) {
 
 	// check if email already exists
 	if DB.CheckIfExists(CONSTANT.UsersTable, map[string]string{"email": body["email"]}) == nil {
-		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.EmailExistMessage, CONSTANT.ShowDialog, response)
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.UserAlreadySignedUpMessage, CONSTANT.ShowDialog, response)
 		return
 	}
 
@@ -201,7 +199,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(user) == 0 {
-		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.UserNotExistMessage, CONSTANT.ShowDialog, response)
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.IncorrectCredentialsExistMessage, CONSTANT.ShowDialog, response)
 		return
 	}
 	if !strings.EqualFold(user[0]["status"], CONSTANT.UserActive) {
@@ -278,11 +276,6 @@ func UserSignUp(w http.ResponseWriter, r *http.Request) {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
 	}
-
-	// hash password
-	body["company_id"] = companyID
-	body["password"] = UTIL.GetMD5HashString(body["password"])
-	body["status"] = CONSTANT.UserActive
 
 	userID, _, err := DB.InsertWithUniqueID(CONSTANT.UsersTable, map[string]string{
 		"company_id": companyID,
