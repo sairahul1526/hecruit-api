@@ -20,7 +20,7 @@ func Home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobsDetails, err := DB.SelectProcess("select count(id) as active_jobs, sum(number_of_positions) as openings_to_fill  from "+CONSTANT.JobsTable+" where company_id = $1 and status = '"+CONSTANT.JobStatusActive+"'", r.Header.Get("company_id"))
+	jobsDetails, err := DB.SelectProcess("select count(id) as active_jobs, sum(number_of_positions) as openings_to_fill  from "+CONSTANT.JobsTable+" where company_id = $1 and status = '"+CONSTANT.JobActive+"'", r.Header.Get("company_id"))
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return

@@ -1,6 +1,7 @@
 package user
 
 import (
+	CONFIG "hecruit-backend/config"
 	CONSTANT "hecruit-backend/constant"
 	DB "hecruit-backend/database"
 	"net/http"
@@ -26,12 +27,30 @@ func JobGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// get company details
+	company, err := DB.SelectSQL(CONSTANT.CompaniesTable, []string{"id", "name", "description", "logo", "website", "banner", "status"}, map[string]string{"id": job[0]["company_id"]})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+	if len(company) == 0 {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.CompanyNotFoundMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+	if !strings.EqualFold(company[0]["status"], CONSTANT.CompanyActive) {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.CompanyNotActiveMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
+	response["company"] = company[0]
+
 	job[0]["team_name"], _ = DB.QueryRowSQL("select name from " + CONSTANT.TeamsTable + " where id = '" + job[0]["team_id"] + "'")
 	job[0]["location_name"], _ = DB.QueryRowSQL("select name from " + CONSTANT.LocationsTable + " where id = '" + job[0]["location_id"] + "'")
 	job[0]["employment_type_name"] = CONSTANT.EmploymentTypes[job[0]["employment_type"]]
 	job[0]["remote_option_name"] = CONSTANT.RemoteOptions[job[0]["remote_option"]]
 
 	response["job"] = job[0]
+	response["media_url"] = CONFIG.S3MediaURL
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }
 
