@@ -69,6 +69,9 @@ func LoadAdminRoutes(router *mux.Router) {
 		"token", "{token}",
 	).Methods("GET")
 
+	// note
+	adminRoutes.HandleFunc("/note", NoteAdd).Methods("POST")
+
 	// location
 	adminRoutes.HandleFunc("/location", LocationsGet).Methods("GET")
 	adminRoutes.HandleFunc("/location", LocationAdd).Methods("POST")

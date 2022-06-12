@@ -65,8 +65,20 @@ func ApplicationGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// get users
-	users, err := DB.SelectProcess("select id, name from " + CONSTANT.UsersTable + " where id in ('" + strings.Join(userIDs, "','") + "')")
+	// get notes on this application
+	notes, err := DB.SelectSQL(CONSTANT.NotesTable, []string{"id", "note", "created_at", "created_by"}, map[string]string{"application_id": r.FormValue("application_id")})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+	// get user ids to get details
+	userIDs = append(userIDs, UTIL.ExtractValuesFromArrayMap(notes, "created_by")...)
+
+	// add logged in user too, to show details
+	userIDs = append(userIDs, r.Header.Get("user_id"))
+
+	// get user details
+	users, err := DB.SelectProcess("select id, name, photo from " + CONSTANT.UsersTable + " where id in ('" + strings.Join(userIDs, "','") + "')")
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
@@ -81,10 +93,19 @@ func ApplicationGet(w http.ResponseWriter, r *http.Request) {
 		activity["created_by_name"] = usersMap[activity["created_by"]]["name"]
 	}
 
+	for _, note := range notes {
+		note["create_by_name"] = usersMap[note["created_by"]]["name"]
+		note["create_by_photo"] = usersMap[note["created_by"]]["photo"]
+	}
+
+	response["notes"] = notes
+
 	application[0]["team_name"] = team[0]["name"]
 	application[0]["job_name"] = job[0]["name"]
 	response["application"] = application[0]
 	response["activities"] = activities
+	response["notes"] = notes
+	response["logged_in_user"] = usersMap[r.Header.Get("user_id")]
 	response["media_url"] = CONFIG.S3MediaURL
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }

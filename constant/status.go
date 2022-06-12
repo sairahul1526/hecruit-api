@@ -76,3 +76,9 @@ const (
 	EmailNotVerified = "0"
 	EmailVerified    = "1"
 )
+
+// note status
+const (
+	NoteActive  = "1"
+	NoteDeleted = "2"
+)
