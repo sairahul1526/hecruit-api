@@ -92,10 +92,11 @@ func UserInvite(w http.ResponseWriter, r *http.Request) {
 	password := strings.Split(uuid.New().String(), "-")[0]
 	// create user
 	_, _, err = DB.InsertWithUniqueID(CONSTANT.UsersTable, map[string]string{
-		"email":      body["email"],
-		"company_id": r.Header.Get("company_id"),
-		"password":   UTIL.GetMD5HashString(password),
-		"status":     CONSTANT.UserActive,
+		"email":          body["email"],
+		"company_id":     r.Header.Get("company_id"),
+		"password":       UTIL.GetMD5HashString(password),
+		"status":         CONSTANT.UserActive,
+		"email_verified": CONSTANT.EmailVerified, // since we are sending login details, it's already verified
 	}, "id")
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
@@ -115,7 +116,7 @@ func UserInvite(w http.ResponseWriter, r *http.Request) {
 
 		<br><br>
 
-		Website: admin.hecruit.com
+		Website: https://admin.hecruit.com/
 
 		<br>
 		
@@ -428,23 +429,26 @@ func UserRefreshToken(w http.ResponseWriter, r *http.Request) {
 
 func UserEmailVerify(w http.ResponseWriter, r *http.Request) {
 
-	var response = make(map[string]interface{})
+	// var response = make(map[string]interface{})
 
 	// parse token and get email
 	data, err := UTIL.ParseJWTToken("Token " + r.FormValue("token"))
 	if err != nil {
-		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		w.Write([]byte("Server Error"))
+		// UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
 	}
 
 	// check if email is valid
 	user, err := DB.SelectSQL(CONSTANT.UsersTable, []string{"id", "name", "email", "company_id"}, map[string]string{"id": data["id"].(string)})
 	if err != nil {
-		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		w.Write([]byte("Server Error"))
+		// UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
 	}
 	if len(user) == 0 {
-		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.UserNotExistMessage, CONSTANT.ShowDialog, response)
+		w.Write([]byte(CONSTANT.UserNotExistMessage))
+		// UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.UserNotExistMessage, CONSTANT.ShowDialog, response)
 		return
 	}
 
@@ -483,5 +487,6 @@ func UserEmailVerify(w http.ResponseWriter, r *http.Request) {
 		"status":     CONSTANT.EmailTobeSent,
 	}, "id")
 
-	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "Email successfully Verified", CONSTANT.ShowDialog, response)
+	http.Redirect(w, r, "https://admin.hecruit.com/", http.StatusSeeOther)
+	// UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "Email successfully Verified", CONSTANT.ShowDialog, response)
 }
