@@ -71,5 +71,48 @@ func ApplicationAdd(w http.ResponseWriter, r *http.Request) {
 
 	response["application_id"] = applicationID
 
+	// get company name
+	companyName, _ := DB.QueryRowSQL("select name from "+CONSTANT.CompaniesTable+" where id = $1", body["company_id"])
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+	// get job name
+	jobName, _ := DB.QueryRowSQL("select name from "+CONSTANT.JobsTable+" where id = $1", body["job_id"])
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+	if len(companyName) > 0 && len(jobName) > 0 {
+
+		// send email to applicant
+		DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
+			"from":  companyName + " <" + CONSTANT.NoReplyEmail + ">",
+			"to":    body["email"],
+			"title": "Thank you for your application to " + companyName,
+			"body": `Hi ` + body["name"] + `,
+
+			<br><br>
+
+			Thank you for your interest in ` + companyName + `! We wanted to let you know we received your application for ` + jobName + `, and we are delighted that you would consider joining our team.
+			
+			<br><br>
+
+			Our team will review your application and will be in touch if your qualifications match our needs for the role. If you are not selected for this position, keep an eye on our jobs page as we're growing and adding openings.
+			
+			<br><br>
+			
+			Best,
+
+			<br>
+
+			` + companyName + ` Team`,
+			"company_id":     body["company_id"],
+			"job_id":         body["job_id"],
+			"application_id": applicationID,
+			"status":         CONSTANT.EmailTobeSent,
+		}, "id")
+	}
+
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }

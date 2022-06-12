@@ -21,7 +21,6 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 func LoaderIO(w http.ResponseWriter, r *http.Request) {
 	// for loader io verification
 	w.Write([]byte("loaderio-e20e1e5221282763725d65fd70174666"))
-	// json.NewEncoder(w).Encode("loaderio-e20e1e5221282763725d65fd70174666")
 }
 
 // LoadRouter - get mux router with all the routes

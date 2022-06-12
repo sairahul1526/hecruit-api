@@ -31,4 +31,8 @@ func LoadConfig() {
 	S3Region = os.Getenv("S3_REGION")
 	S3Bucket = os.Getenv("S3_BUCKET")
 	S3MediaURL = os.Getenv("S3_MEDIA_URL")
+
+	// aws
+	AWSAccessKey = os.Getenv("AMAZON_ACCESS_KEY")
+	AWSSecretKey = os.Getenv("AMAZON_SECRET_KEY")
 }

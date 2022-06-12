@@ -6,6 +6,7 @@ const (
 	ApplicationsTable          = "applications"
 	CompaniesTable             = "companies"
 	InvoicesTable              = "invoices"
+	EmailsTable                = "emails"
 	JobsTable                  = "jobs"
 	JobStatusTable             = "job_status"
 	LocationsTable             = "locations"

@@ -102,7 +102,44 @@ func UserInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO - send email
+	// send login details email
+	DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
+		"from":  "Hecruit <" + CONSTANT.NoReplyEmail + ">",
+		"to":    body["email"],
+		"title": "Login credentials - Hecruit",
+		"body": `Hey,
+
+		<br><br>
+
+		Below are the credentials to login to your Hecruit account.
+
+		<br><br>
+
+		Website: admin.hecruit.com
+
+		<br>
+		
+		Email: ` + body["email"] + `
+
+		<br>
+		
+		Password: ` + password + `
+
+		<br><br>
+
+		Change your password in the settings.
+
+		<br><br>
+		
+		Best,
+
+		<br>
+
+		Hecruit Team`,
+		"company_id": r.Header.Get("company_id"),
+		"status":     CONSTANT.EmailTobeSent,
+	}, "id")
+
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }
 
@@ -326,6 +363,38 @@ func UserSignUp(w http.ResponseWriter, r *http.Request) {
 	response["access_token"] = accessToken
 	response["refresh_token"] = refreshToken
 
+	emailToken, err := UTIL.CreateAccessToken(map[string]interface{}{"id": user[0]["id"], "email": body["email"]})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// send verify email
+	DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
+		"from":  "Hecruit <" + CONSTANT.NoReplyEmail + ">",
+		"to":    body["email"],
+		"title": "Verify " + body["company_name"] + " jobs page - Hecruit",
+		"body": `Hey ` + body["name"] + `,
+
+		<br><br>
+
+		Please click on this link (or copy & paste) to verify your account and activate your ` + body["company_name"] + ` job page 👇:
+
+		<br><br>
+		
+		https://api.hecruit.com/admin/email-verify?token=` + emailToken + `
+
+		<br><br>
+		
+		Best,
+
+		<br>
+		
+		Hecruit Team`,
+		"company_id": companyID,
+		"status":     CONSTANT.EmailTobeSent,
+	}, "id")
+
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }
 
@@ -355,4 +424,64 @@ func UserRefreshToken(w http.ResponseWriter, r *http.Request) {
 	response["access_token"] = accessToken
 
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
+}
+
+func UserEmailVerify(w http.ResponseWriter, r *http.Request) {
+
+	var response = make(map[string]interface{})
+
+	// parse token and get email
+	data, err := UTIL.ParseJWTToken("Token " + r.FormValue("token"))
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// check if email is valid
+	user, err := DB.SelectSQL(CONSTANT.UsersTable, []string{"id", "name", "email", "company_id"}, map[string]string{"id": data["id"].(string)})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+	if len(user) == 0 {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.UserNotExistMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// update user email verified
+	DB.UpdateSQL(CONSTANT.UsersTable, map[string]string{
+		"id": user[0]["id"],
+	}, map[string]string{
+		"email_verified": CONSTANT.EmailVerified,
+	})
+
+	// send welcome email when verified
+	DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
+		"from":  "Rahul <" + CONSTANT.RahulEmail + ">",
+		"to":    user[0]["email"],
+		"title": "Welcome to Hecruit",
+		"body": `Hi ` + user[0]["name"] + `,
+		
+		<br><br>
+		
+		Rahul here, founder of Hecruit. I want to thank you for joining us and say hello 👋.
+		
+		<br><br>
+		
+		It’s essential for us that we build a product that you’ll love to use, so if you have questions or feedback just reply to this. This is my email, so I'll try to reply back as soon as possible.
+		
+		<br><br>
+
+		You can also reach us at support@hecruit.com and on Twitter at @hecruitHQ.
+		
+		<br><br>
+
+		Thanks so much for joining us!<br>
+		Rahul (@sairahul1)<br>
+		Founder of Hecruit`,
+		"company_id": user[0]["company_id"],
+		"status":     CONSTANT.EmailTobeSent,
+	}, "id")
+
+	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "Email successfully Verified", CONSTANT.ShowDialog, response)
 }

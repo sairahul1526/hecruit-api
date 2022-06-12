@@ -63,3 +63,16 @@ const (
 	JobStatusHired    = "2"
 	JobStatusRejected = "3"
 )
+
+// email status
+const (
+	EmailTobeSent = "0"
+	EmailSent     = "1"
+	EmailArchived = "2"
+)
+
+// user email status
+const (
+	EmailNotVerified = "0"
+	EmailVerified    = "1"
+)
