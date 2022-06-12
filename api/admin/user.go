@@ -490,3 +490,81 @@ func UserEmailVerify(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "https://admin.hecruit.com/", http.StatusSeeOther)
 	// UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "Email successfully Verified", CONSTANT.ShowDialog, response)
 }
+
+func UserResetPassword(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var response = make(map[string]interface{})
+
+	// read request body
+	body, err := UTIL.ReadRequestBodyToMap(r)
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// check for required fields
+	fieldCheck := UTIL.RequiredFiledsCheck(body, CONSTANT.UserForgotPasswordRequiredFields)
+	if len(fieldCheck) > 0 {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, fieldCheck+" required", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// check if email already exists
+	if DB.CheckIfExists(CONSTANT.UsersTable, map[string]string{"email": body["email"]}) != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.UserNotExistMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
+	password := strings.Split(uuid.New().String(), "-")[0]
+	// update password
+	_, err = DB.UpdateSQL(CONSTANT.UsersTable, map[string]string{
+		"email": body["email"],
+	}, map[string]string{
+		"password": UTIL.GetMD5HashString(password),
+	})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// send login details email
+	DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
+		"from":  "Hecruit <" + CONSTANT.NoReplyEmail + ">",
+		"to":    body["email"],
+		"title": "New login credentials - Hecruit",
+		"body": `Hey,
+
+		<br><br>
+
+		Below are the credentials to login to your Hecruit account.
+
+		<br><br>
+
+		Website: https://admin.hecruit.com/
+
+		<br>
+		
+		Email: ` + body["email"] + `
+
+		<br>
+		
+		Password: ` + password + `
+
+		<br><br>
+
+		Change your password in the settings.
+
+		<br><br>
+		
+		Best,
+
+		<br>
+
+		Hecruit Team`,
+		"company_id": r.Header.Get("company_id"),
+		"status":     CONSTANT.EmailTobeSent,
+	}, "id")
+
+	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "New password has been sent to your email. Login.", CONSTANT.ShowDialog, response)
+}

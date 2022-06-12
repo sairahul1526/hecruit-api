@@ -68,6 +68,7 @@ func LoadAdminRoutes(router *mux.Router) {
 	adminRoutes.HandleFunc("/email-verify", UserEmailVerify).Queries(
 		"token", "{token}",
 	).Methods("GET")
+	adminRoutes.HandleFunc("/reset-password", UserResetPassword).Methods("POST")
 
 	// note
 	adminRoutes.HandleFunc("/note", NoteAdd).Methods("POST")
