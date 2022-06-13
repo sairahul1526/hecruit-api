@@ -82,3 +82,9 @@ const (
 	NoteActive  = "1"
 	NoteDeleted = "2"
 )
+
+// interview status
+const (
+	InterviewActive    = "1"
+	InterviewCancelled = "2"
+)

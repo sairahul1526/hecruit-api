@@ -4,6 +4,7 @@ import (
 	CONSTANT "hecruit-backend/constant"
 	DB "hecruit-backend/database"
 	"strings"
+	"time"
 
 	UTIL "hecruit-backend/util"
 )
@@ -11,6 +12,7 @@ import (
 func SendEmailsContinously() {
 	defer SendEmailsContinously()
 	for {
+		time.Sleep(1 * time.Minute)
 		// get all emails which are not sent
 		emails, err := DB.SelectProcess("select * from " + CONSTANT.EmailsTable + " where status = '" + CONSTANT.EmailTobeSent + "' limit 10")
 		if err != nil || len(emails) == 0 { // stop if no emails found
