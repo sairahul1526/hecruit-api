@@ -4,6 +4,7 @@ import (
 	CONSTANT "hecruit-backend/constant"
 	DB "hecruit-backend/database"
 	"net/http"
+	"strconv"
 	"strings"
 
 	UTIL "hecruit-backend/util"
@@ -55,26 +56,65 @@ func JobsGet(w http.ResponseWriter, r *http.Request) {
 
 	var response = make(map[string]interface{})
 
-	// get jobs in a team
-	jobs, err := DB.SelectSQL(CONSTANT.JobsTable, []string{"id", "name", "employment_type", "salary", "location_id", "remote_option"}, map[string]string{"team_id": r.FormValue("team_id"), "location_id": r.FormValue("location_id"), "status": r.FormValue("status")})
+	// build query
+	wheres := []string{
+		" company_id = $1 ",
+	}
+	queryArgs := []interface{}{
+		r.Header.Get("company_id"),
+	}
+	i := 2
+	for key, val := range r.URL.Query() {
+		switch key {
+		case "team_id":
+			if len(val[0]) > 0 {
+				wheres = append(wheres, " team_id = $"+strconv.Itoa(i))
+				queryArgs = append(queryArgs, val[0])
+				i++
+			}
+		case "location_id":
+			if len(val[0]) > 0 {
+				wheres = append(wheres, " location_id = $"+strconv.Itoa(i))
+				queryArgs = append(queryArgs, val[0])
+				i++
+			}
+		case "status":
+			if len(val[0]) > 0 {
+				wheres = append(wheres, " status = $"+strconv.Itoa(i))
+				queryArgs = append(queryArgs, val[0])
+				i++
+			}
+		}
+	}
+
+	where := ""
+	if len(wheres) > 0 {
+		where = " where " + strings.Join(wheres, " and ")
+	}
+
+	// get jobs
+	jobs, err := DB.SelectProcess("select id, name, employment_type, salary, location_id, team_id, remote_option from "+CONSTANT.JobsTable+where+" order by name asc", queryArgs...)
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
 	}
-	// get job, location ids to get details
-	jobIDs := UTIL.ExtractValuesFromArrayMap(jobs, "id")
 
-	// get number of applications for each job
-	applicationsCount, err := DB.SelectProcess("select job_id, count(*) as applications from " + CONSTANT.ApplicationsTable + " where job_id in ('" + strings.Join(jobIDs, "','") + "') group by job_id")
-	if err != nil {
-		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
-		return
-	}
+	if strings.EqualFold(r.FormValue("applications"), "true") {
+		// get job, location ids to get details
+		jobIDs := UTIL.ExtractValuesFromArrayMap(jobs, "id")
 
-	applicationsCountMap := UTIL.ConvertMapToKeyMap(applicationsCount, "job_id")
+		// get number of applications for each job
+		applicationsCount, err := DB.SelectProcess("select job_id, count(*) as applications from " + CONSTANT.ApplicationsTable + " where job_id in ('" + strings.Join(jobIDs, "','") + "') group by job_id")
+		if err != nil {
+			UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+			return
+		}
 
-	for _, job := range jobs {
-		job["applications"] = applicationsCountMap[job["id"]]["applications"]
+		applicationsCountMap := UTIL.ConvertMapToKeyMap(applicationsCount, "job_id")
+
+		for _, job := range jobs {
+			job["applications"] = applicationsCountMap[job["id"]]["applications"]
+		}
 	}
 
 	response["jobs"] = jobs

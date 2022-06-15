@@ -28,7 +28,11 @@ func LoadAdminRoutes(router *mux.Router) {
 	adminRoutes.HandleFunc("/company", CompanyUpdate).Methods("PUT")
 
 	// interview
+	adminRoutes.HandleFunc("/interview", InterviewsGet).Methods("GET")
 	adminRoutes.HandleFunc("/interview", InterviewAdd).Methods("POST")
+	adminRoutes.HandleFunc("/interview", InterviewCancel).Queries(
+		"interview_id", "{interview_id}",
+	).Methods("DELETE")
 
 	// home
 	adminRoutes.HandleFunc("/home", Home).Methods("GET")

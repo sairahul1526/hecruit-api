@@ -77,6 +77,15 @@ func ApplicationGet(w http.ResponseWriter, r *http.Request) {
 	// add logged in user too, to show details
 	userIDs = append(userIDs, r.Header.Get("user_id"))
 
+	// get interviews for this application
+	interviews, err := DB.SelectSQL(CONSTANT.InterviewsTable, []string{"id", "title", "organizer", "attendees", "meeting_link", "start_at", "end_at", "created_by", "status"}, map[string]string{"application_id": r.FormValue("application_id")})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+	// get user ids to get details
+	userIDs = append(userIDs, UTIL.ExtractValuesFromArrayMap(interviews, "created_by")...)
+
 	// get user details
 	users, err := DB.SelectProcess("select id, name, photo from " + CONSTANT.UsersTable + " where id in ('" + strings.Join(userIDs, "','") + "')")
 	if err != nil {
@@ -98,7 +107,12 @@ func ApplicationGet(w http.ResponseWriter, r *http.Request) {
 		note["create_by_photo"] = usersMap[note["created_by"]]["photo"]
 	}
 
+	for _, interview := range interviews {
+		interview["create_by_name"] = usersMap[interview["created_by"]]["name"]
+	}
+
 	response["notes"] = notes
+	response["interviews"] = interviews
 
 	application[0]["team_name"] = team[0]["name"]
 	application[0]["job_name"] = job[0]["name"]
@@ -137,6 +151,34 @@ func ApplicationsGet(w http.ResponseWriter, r *http.Request) {
 			if len(val[0]) > 0 {
 				wheres = append(wheres, " email ilike '%%"+val[0]+"%%' ")
 			}
+		case "experience":
+			if len(val[0]) > 0 {
+				temp := strings.Split(val[0], ",")
+				if len(temp[0]) > 0 {
+					wheres = append(wheres, "$"+strconv.Itoa(i)+" <= total_experience ")
+					queryArgs = append(queryArgs, temp[0])
+					i++
+				}
+				if len(temp[1]) > 0 {
+					wheres = append(wheres, " total_experience <= $"+strconv.Itoa(i))
+					queryArgs = append(queryArgs, temp[1])
+					i++
+				}
+			}
+		case "notice":
+			if len(val[0]) > 0 {
+				temp := strings.Split(val[0], ",")
+				if len(temp[0]) > 0 {
+					wheres = append(wheres, "$"+strconv.Itoa(i)+" <= notice_period ")
+					queryArgs = append(queryArgs, temp[0])
+					i++
+				}
+				if len(temp[1]) > 0 {
+					wheres = append(wheres, " notice_period <= $"+strconv.Itoa(i))
+					queryArgs = append(queryArgs, temp[1])
+					i++
+				}
+			}
 		case "job_id":
 			if len(val[0]) > 0 {
 				wheres = append(wheres, " job_id = $"+strconv.Itoa(i))
@@ -157,7 +199,7 @@ func ApplicationsGet(w http.ResponseWriter, r *http.Request) {
 		where = " where " + strings.Join(wheres, " and ")
 	}
 	// get applications
-	applications, err := DB.SelectProcess("select id, name, email, location, status, rating, created_at, updated_at from "+CONSTANT.ApplicationsTable+where+" order by created_at desc limit "+strconv.Itoa(CONSTANT.ResultsPerPageAdmin)+" offset "+strconv.Itoa((UTIL.GetPageNumber(r.FormValue("page"))-1)*CONSTANT.ResultsPerPageAdmin), queryArgs...)
+	applications, err := DB.SelectProcess("select id, name, email, location, status, job_id, rating, created_at, updated_at from "+CONSTANT.ApplicationsTable+where+" order by created_at desc limit "+strconv.Itoa(CONSTANT.ResultsPerPageAdmin)+" offset "+strconv.Itoa((UTIL.GetPageNumber(r.FormValue("page"))-1)*CONSTANT.ResultsPerPageAdmin), queryArgs...)
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
@@ -179,7 +221,7 @@ func ApplicationsGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(r.FormValue("job_id")) > 0 {
+	if strings.EqualFold(r.FormValue("applications"), "true") {
 		// get number of applications for each status
 		applicationsByStatus, err := DB.SelectProcess("select status, count(*) as ctn from "+CONSTANT.ApplicationsTable+" where job_id = $1 group by status order by status", r.FormValue("job_id"))
 		if err != nil {
