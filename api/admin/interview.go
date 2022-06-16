@@ -4,6 +4,7 @@ import (
 	CONSTANT "hecruit-backend/constant"
 	DB "hecruit-backend/database"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -138,6 +139,47 @@ func InterviewAdd(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// get company detail
+	company, err := DB.SelectSQL(CONSTANT.CompaniesTable, []string{"name"}, map[string]string{"id": r.Header.Get("company_id")})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+	if len(company) == 0 {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.CompanyNotFoundMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// get job details
+	job, err := DB.SelectSQL(CONSTANT.JobsTable, []string{"name"}, map[string]string{"id": body["job_id"]})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+	if len(job) == 0 {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.JobNotFoundMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// get application details
+	application, err := DB.SelectSQL(CONSTANT.ApplicationsTable, []string{"name"}, map[string]string{"id": body["application_id"]})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+	if len(application) == 0 {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.ApplicationNotFoundMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// create and upload ics file
+	os.Mkdir(CONSTANT.ICSS3Path, os.ModePerm)
+	icsFileName := CONSTANT.ICSS3Path + UTIL.GenerateRandomID() + ".ics"
+	if !UTIL.UploadContentAsFile(icsFileName, []byte(UTIL.BuildICSFile(body["meeting_link"], body["organizer"], body["attendees"], icsFileName, body["title"], body["start_at"], body["end_at"]))) {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
 	// create interview
 	interviewID, _, err := DB.InsertWithUniqueID(CONSTANT.InterviewsTable, map[string]string{
 		"company_id":     r.Header.Get("company_id"),
@@ -158,6 +200,19 @@ func InterviewAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response["interview_id"] = interviewID
+
+	// send interview details email
+	DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
+		"from":           company[0]["name"] + " <" + CONSTANT.NoReplyEmail + ">",
+		"to":             body["organizer"] + "," + body["attendees"],
+		"title":          body["title"],
+		"body":           company[0]["name"],
+		"company_id":     r.Header.Get("company_id"),
+		"job_id":         body["job_id"],
+		"application_id": body["application_id"],
+		"attachment":     icsFileName,
+		"status":         CONSTANT.EmailTobeSent,
+	}, "id")
 
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }

@@ -57,8 +57,7 @@ func InsertWithUniqueID(table string, body map[string]string, key string) (strin
 }
 
 func generateRandomID() string {
-	id := uuid.New()
-	return id.String()
+	return uuid.New().String()
 }
 
 // RowCount - get number of items in database with specified query

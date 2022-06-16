@@ -1,6 +1,10 @@
 package util
 
-import "regexp"
+import (
+	"regexp"
+
+	"github.com/google/uuid"
+)
 
 // regex to check if email if valid
 var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
@@ -11,4 +15,8 @@ func IsEmailValid(e string) bool {
 		return false
 	}
 	return emailRegex.MatchString(e)
+}
+
+func GenerateRandomID() string {
+	return uuid.New().String()
 }

@@ -1,14 +1,19 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
 	CONFIG "hecruit-backend/config"
+	"os"
+	"strings"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ses"
+	"github.com/go-resty/resty/v2"
+	"gopkg.in/gomail.v2"
 )
 
 var emailWaitGroup sync.WaitGroup
@@ -17,12 +22,12 @@ func SendEmails(emails []map[string]string) {
 	// send emails at once
 	for _, email := range emails {
 		emailWaitGroup.Add(1)
-		go sendSESMail(email["from"], email["to"], email["title"], email["body"])
+		go sendSESMail(email["from"], email["to"], email["title"], email["body"], email["attachment"])
 	}
 	emailWaitGroup.Wait()
 }
 
-func sendSESMail(from, to, title, body string) {
+func sendSESMail(from, to, title, body, attachment string) {
 	defer emailWaitGroup.Done()
 
 	// start a new aws session
@@ -38,27 +43,39 @@ func sendSESMail(from, to, title, body string) {
 		Region:      aws.String("us-east-2"),
 	})
 
-	params := &ses.SendEmailInput{
-		Destination: &ses.Destination{ // Required
-			ToAddresses: []*string{
-				aws.String(to), // Required
-			},
-		},
-		Message: &ses.Message{ // Required
-			Body: &ses.Body{ // Required
-				Html: &ses.Content{
-					Data:    aws.String(body), // Required
-					Charset: aws.String("UTF-8"),
-				},
-			},
-			Subject: &ses.Content{ // Required
-				Data:    aws.String(title), // Required
-				Charset: aws.String("UTF-8"),
-			},
-		},
-		Source: aws.String(from),
+	msg := gomail.NewMessage()
+	msg.SetHeader("From", from)
+	msg.SetHeader("To", strings.Split(to, ",")...)
+	msg.SetHeader("Subject", title)
+	msg.SetBody("text/html", body)
+	if len(attachment) > 0 {
+		tempFileName := GenerateRandomID() + "." + getFileExtension(attachment)
+		fmt.Println(tempFileName, CONFIG.S3MediaURL+attachment)
+		defer os.Remove(tempFileName)
+		_, err := resty.New().R().
+			SetOutput(tempFileName).
+			Get(CONFIG.S3MediaURL + attachment)
+
+		if err != nil {
+			fmt.Println("failed to download attachment,", err)
+			return
+		}
+
+		msg.Attach(tempFileName)
 	}
 
+	var emailRaw bytes.Buffer
+	msg.WriteTo(&emailRaw)
+
+	message := ses.RawMessage{Data: emailRaw.Bytes()}
+
+	input := &ses.SendRawEmailInput{RawMessage: &message}
+
 	// send email
-	svc.SendEmail(params)
+	svc.SendRawEmail(input)
+}
+
+func getFileExtension(fileName string) string {
+	temp := strings.Split(fileName, ".")
+	return temp[len(temp)-1]
 }

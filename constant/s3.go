@@ -5,4 +5,5 @@ const (
 	CompanyS3Path = "company/"
 	ResumeS3Path  = "resume/"
 	UserS3Path    = "user/"
+	ICSS3Path     = "ics/"
 )
