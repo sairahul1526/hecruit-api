@@ -87,9 +87,10 @@ func ApplicationAdd(w http.ResponseWriter, r *http.Request) {
 
 		// send email to applicant
 		DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
-			"from":  companyName + " <" + CONSTANT.NoReplyEmail + ">",
-			"to":    body["email"],
-			"title": "Thank you for your application to " + companyName,
+			"from":     companyName + " <" + CONSTANT.NoReplyEmail + ">",
+			"to":       body["email"],
+			"reply_to": CONSTANT.SupportEmail,
+			"title":    "Thank you for your application to " + companyName,
 			"body": `Hi ` + body["name"] + `,
 
 			<br><br>

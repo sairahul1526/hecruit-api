@@ -205,6 +205,7 @@ func InterviewAdd(w http.ResponseWriter, r *http.Request) {
 	DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
 		"from":           company[0]["name"] + " <" + CONSTANT.NoReplyEmail + ">",
 		"to":             body["organizer"] + "," + body["attendees"],
+		"reply_to":       body["organizer"],
 		"title":          body["title"],
 		"body":           company[0]["name"],
 		"company_id":     r.Header.Get("company_id"),
@@ -267,6 +268,7 @@ func InterviewCancel(w http.ResponseWriter, r *http.Request) {
 	DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
 		"from":           company[0]["name"] + " <" + CONSTANT.NoReplyEmail + ">",
 		"to":             interview[0]["organizer"] + "," + interview[0]["attendees"],
+		"reply_to":       interview[0]["organizer"],
 		"title":          "CANCELLED - " + interview[0]["title"],
 		"body":           company[0]["name"],
 		"company_id":     r.Header.Get("company_id"),

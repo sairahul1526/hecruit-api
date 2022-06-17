@@ -105,9 +105,10 @@ func UserInvite(w http.ResponseWriter, r *http.Request) {
 
 	// send login details email
 	DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
-		"from":  "Hecruit <" + CONSTANT.NoReplyEmail + ">",
-		"to":    body["email"],
-		"title": "Login credentials - Hecruit",
+		"from":     "Hecruit <" + CONSTANT.NoReplyEmail + ">",
+		"to":       body["email"],
+		"reply_to": CONSTANT.SupportEmail,
+		"title":    "Login credentials - Hecruit",
 		"body": `Hey,
 
 		<br><br>
@@ -372,9 +373,10 @@ func UserSignUp(w http.ResponseWriter, r *http.Request) {
 
 	// send verify email
 	DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
-		"from":  "Hecruit <" + CONSTANT.NoReplyEmail + ">",
-		"to":    body["email"],
-		"title": "Verify " + body["company_name"] + " jobs page - Hecruit",
+		"from":     "Hecruit <" + CONSTANT.NoReplyEmail + ">",
+		"to":       body["email"],
+		"reply_to": CONSTANT.SupportEmail,
+		"title":    "Verify " + body["company_name"] + " jobs page - Hecruit",
 		"body": `Hey ` + body["name"] + `,
 
 		<br><br>
@@ -530,9 +532,10 @@ func UserResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	// send login details email
 	DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
-		"from":  "Hecruit <" + CONSTANT.NoReplyEmail + ">",
-		"to":    body["email"],
-		"title": "New login credentials - Hecruit",
+		"from":     "Hecruit <" + CONSTANT.NoReplyEmail + ">",
+		"to":       body["email"],
+		"reply_to": CONSTANT.SupportEmail,
+		"title":    "New login credentials - Hecruit",
 		"body": `Hey,
 
 		<br><br>

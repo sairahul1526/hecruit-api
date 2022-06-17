@@ -22,12 +22,12 @@ func SendEmails(emails []map[string]string) {
 	// send emails at once
 	for _, email := range emails {
 		emailWaitGroup.Add(1)
-		go sendSESMail(email["from"], email["to"], email["title"], email["body"], email["attachment"])
+		go sendSESMail(email["from"], email["reply_to"], email["to"], email["title"], email["body"], email["attachment"])
 	}
 	emailWaitGroup.Wait()
 }
 
-func sendSESMail(from, to, title, body, attachment string) {
+func sendSESMail(from, replyTo, to, title, body, attachment string) {
 	defer emailWaitGroup.Done()
 
 	// start a new aws session
@@ -45,6 +45,9 @@ func sendSESMail(from, to, title, body, attachment string) {
 
 	msg := gomail.NewMessage()
 	msg.SetHeader("From", from)
+	if len(replyTo) > 0 {
+		msg.SetHeader("Reply-To", replyTo)
+	}
 	msg.SetHeader("To", strings.Split(to, ",")...)
 	msg.SetHeader("Subject", title)
 	msg.SetBody("text/html", body)
