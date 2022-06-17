@@ -72,7 +72,7 @@ func UploadContentAsFile(fileName string, body []byte) bool {
 	return true
 }
 
-func BuildICSFile(meetingLink, organizer, attendees, icsFileName, title, start, end string) string {
+func BuildICSFile(meetingLink, organizer, attendees, UID, title, start, end, status, sequence string) string {
 
 	icsContent := `BEGIN:VCALENDAR
 VERSION:2.0
@@ -87,7 +87,7 @@ LOCATION=` + meetingLink
 	icsContent += `
 ORGANIZER;CN=` + organizer + `:mailto:` + organizer
 	icsContent += `
-UID:` + icsFileName
+UID:` + UID
 	for _, email := range strings.Split(attendees, ",") {
 		icsContent += `
 ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=` + email + `;X-NUM-GUESTS=0:mailto:` + email
@@ -97,8 +97,8 @@ ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;
 CREATED:` + getDateForICS(time.Now().UTC().Format(time.RFC3339)) + `
 LAST-MODIFIED:` + getDateForICS(time.Now().UTC().Format(time.RFC3339)) + `
 LOCATION:
-SEQUENCE:0
-STATUS:CONFIRMED
+SEQUENCE:` + sequence + `
+STATUS:` + status + `
 SUMMARY:` + title + `
 TRANSP:OPAQUE
 END:VEVENT

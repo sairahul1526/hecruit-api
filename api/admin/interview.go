@@ -172,14 +172,6 @@ func InterviewAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// create and upload ics file
-	os.Mkdir(CONSTANT.ICSS3Path, os.ModePerm)
-	icsFileName := CONSTANT.ICSS3Path + UTIL.GenerateRandomID() + ".ics"
-	if !UTIL.UploadContentAsFile(icsFileName, []byte(UTIL.BuildICSFile(body["meeting_link"], body["organizer"], body["attendees"], icsFileName, body["title"], body["start_at"], body["end_at"]))) {
-		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
-		return
-	}
-
 	// create interview
 	interviewID, _, err := DB.InsertWithUniqueID(CONSTANT.InterviewsTable, map[string]string{
 		"company_id":     r.Header.Get("company_id"),
@@ -200,6 +192,14 @@ func InterviewAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response["interview_id"] = interviewID
+
+	// create and upload ics file
+	os.Mkdir(CONSTANT.ICSS3Path, os.ModePerm)
+	icsFileName := CONSTANT.ICSS3Path + UTIL.GenerateRandomID() + ".ics"
+	if !UTIL.UploadContentAsFile(icsFileName, []byte(UTIL.BuildICSFile(body["meeting_link"], body["organizer"], body["attendees"], interviewID, body["title"], body["start_at"], body["end_at"], "CONFIRMED", "0"))) {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
 
 	// send interview details email
 	DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
@@ -222,8 +222,30 @@ func InterviewCancel(w http.ResponseWriter, r *http.Request) {
 
 	var response = make(map[string]interface{})
 
-	// create interview
-	_, err := DB.UpdateSQL(CONSTANT.InterviewsTable, map[string]string{
+	// get interview details
+	interview, err := DB.SelectSQL(CONSTANT.InterviewsTable, []string{"*"}, map[string]string{"id": r.FormValue("interview_id")})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+	if len(interview) == 0 {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.InterviewNotFoundMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// get company detail
+	company, err := DB.SelectSQL(CONSTANT.CompaniesTable, []string{"name"}, map[string]string{"id": interview[0]["company_id"]})
+	if err != nil {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+	if len(company) == 0 {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeBadRequest, CONSTANT.CompanyNotFoundMessage, CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// cancel interview
+	_, err = DB.UpdateSQL(CONSTANT.InterviewsTable, map[string]string{
 		"id": r.FormValue("interview_id"),
 	}, map[string]string{
 		"status": CONSTANT.InterviewCancelled,
@@ -232,6 +254,27 @@ func InterviewCancel(w http.ResponseWriter, r *http.Request) {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
 	}
+
+	// create and upload ics file
+	os.Mkdir(CONSTANT.ICSS3Path, os.ModePerm)
+	icsFileName := CONSTANT.ICSS3Path + UTIL.GenerateRandomID() + ".ics"
+	if !UTIL.UploadContentAsFile(icsFileName, []byte(UTIL.BuildICSFile(interview[0]["meeting_link"], interview[0]["organizer"], interview[0]["attendees"], interview[0]["id"], interview[0]["title"], interview[0]["start_at"], interview[0]["end_at"], "CANCELLED", "1"))) {
+		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
+		return
+	}
+
+	// send interview details email
+	DB.InsertWithUniqueID(CONSTANT.EmailsTable, map[string]string{
+		"from":           company[0]["name"] + " <" + CONSTANT.NoReplyEmail + ">",
+		"to":             interview[0]["organizer"] + "," + interview[0]["attendees"],
+		"title":          "CANCELLED - " + interview[0]["title"],
+		"body":           company[0]["name"],
+		"company_id":     r.Header.Get("company_id"),
+		"job_id":         interview[0]["job_id"],
+		"application_id": interview[0]["application_id"],
+		"attachment":     icsFileName,
+		"status":         CONSTANT.EmailTobeSent,
+	}, "id")
 
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)
 }
