@@ -88,6 +88,8 @@ LOCATION=` + meetingLink
 ORGANIZER;CN=` + organizer + `:mailto:` + organizer
 	icsContent += `
 UID:` + UID
+	icsContent += `
+ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=` + organizer + `;X-NUM-GUESTS=0:mailto:` + organizer
 	for _, email := range strings.Split(attendees, ",") {
 		icsContent += `
 ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=` + email + `;X-NUM-GUESTS=0:mailto:` + email
