@@ -9,4 +9,6 @@ func LoadMiscellaneousRoutes(router *mux.Router) {
 	// meta
 	adminRoutes.HandleFunc("/meta", MetaGet).Methods("GET")
 
+	// paddle
+	adminRoutes.HandleFunc("/paddle", PaddleCallback).Methods("POST")
 }

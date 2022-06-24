@@ -24,7 +24,8 @@ func UserGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	company, err := DB.SelectProcess("select name, jobs_link from " + CONSTANT.CompaniesTable + " where id = '" + user[0]["company_id"] + "'")
+	// get company details
+	company, err := DB.SelectProcess("select name, jobs_link, next_bill_date, plan from " + CONSTANT.CompaniesTable + " where id = '" + user[0]["company_id"] + "'")
 	if err != nil {
 		UTIL.SetReponse(w, CONSTANT.StatusCodeServerError, "", CONSTANT.ShowDialog, response)
 		return
@@ -35,7 +36,9 @@ func UserGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user[0]["company_name"] = company[0]["name"]
+	user[0]["company_plan"] = company[0]["plan"]
 	user[0]["company_jobs_link"] = company[0]["jobs_link"]
+	user[0]["company_next_bill_date"] = company[0]["next_bill_date"]
 	response["user"] = user[0]
 	response["media_url"] = CONFIG.S3MediaURL
 	UTIL.SetReponse(w, CONSTANT.StatusCodeOk, "", CONSTANT.ShowDialog, response)

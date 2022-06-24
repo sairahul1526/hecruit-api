@@ -34,6 +34,9 @@ func LoadAdminRoutes(router *mux.Router) {
 		"interview_id", "{interview_id}",
 	).Methods("DELETE")
 
+	// invoice
+	adminRoutes.HandleFunc("/invoice", InvoicesGet).Methods("GET")
+
 	// home
 	adminRoutes.HandleFunc("/home", Home).Methods("GET")
 
