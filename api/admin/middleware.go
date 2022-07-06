@@ -49,7 +49,7 @@ func CheckUserValid(next http.Handler) http.Handler {
 // CheckAuthToken - verify access, refresh token and expiry
 func CheckAuthToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.URL.Path, "/login") || strings.Contains(r.URL.Path, "/signup") || strings.Contains(r.URL.Path, "/email-verify") {
+		if strings.Contains(r.URL.Path, "/login") || strings.Contains(r.URL.Path, "/signup") || strings.Contains(r.URL.Path, "/email-verify") || strings.Contains(r.URL.Path, "/reset-password") {
 			// pass through
 		} else if strings.Contains(r.URL.Path, "/refresh-token") {
 			if UTIL.IsAccessToken(r.Header.Get("Authorization")) == nil {
