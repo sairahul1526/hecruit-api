@@ -75,7 +75,8 @@ func sendSESMail(from, replyTo, to, title, body, attachment string) {
 	input := &ses.SendRawEmailInput{RawMessage: &message}
 
 	// send email
-	svc.SendRawEmail(input)
+	_, err = svc.SendRawEmail(input)
+	fmt.Println(err)
 }
 
 func getFileExtension(fileName string) string {
